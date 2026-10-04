@@ -1,0 +1,11 @@
+# Normaliza quebras de linha (LF) em todos os arquivos de texto,
+# garantindo consistência entre Windows (local) e Linux (CI/Vercel).
+* text=auto
+
+# Arquivos que não devem sofrer normalização de fim de linha.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary

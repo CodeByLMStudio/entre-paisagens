@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Tipografia cartográfica
+ *
+ *  - .type-display: títulos e nomes de lugares (Montserrat Medium, caixa alta,
+ *    espaçamento de letras 2–3 pt).
+ *  - .type-label:   título da legenda (Montserrat SemiBold, caixa alta,
+ *    espaçamento de letras 1,5–2 pt).
+ *  - .type-alt:     alternativa minimalista (Manrope, informações secundárias).
+ *  - Legenda e textos auxiliares usam a fonte base (Lato) automaticamente.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  .type-display {
+    font-family: var(--font-montserrat), var(--font-lato), system-ui, sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+
+  .type-label {
+    font-family: var(--font-montserrat), var(--font-lato), system-ui, sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .type-alt {
+    font-family: var(--font-manrope), var(--font-lato), system-ui, sans-serif;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Leaflet — sobrescritas mínimas para alinhar ao tema e aos ícones custom.
+ * ------------------------------------------------------------------------- */
+
+.leaflet-container {
+  background: #f2e3c8;
+  font-family: var(--font-lato), system-ui, sans-serif;
+}
+
+/* Ícones custom (divIcon) não devem herdar o fundo padrão do Leaflet. */
+.ep-marker,
+.ep-pending-marker {
+  background: transparent;
+  border: none;
+}
