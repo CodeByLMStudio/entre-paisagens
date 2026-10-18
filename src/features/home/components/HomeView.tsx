@@ -17,24 +17,25 @@ export function HomeView() {
   const { startRegistration } = useReportFlow();
   const setContactOpen = useUiStore((s) => s.setContactOpen);
   const setTutorialOpen = useUiStore((s) => s.setTutorialOpen);
+  const setLegalDoc = useUiStore((s) => s.setLegalDoc);
 
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-end overflow-hidden p-6 text-center md:justify-center">
+    <main className="relative flex flex-1 flex-col overflow-y-auto p-4 text-center sm:p-6">
       <div className="absolute inset-0 z-0">
         <Image
           src={HOME_BG_URL}
           alt=""
           fill
           priority
-          className="object-cover brightness-95"
+          className="object-cover brightness-105 saturate-105"
           sizes="100vw"
         />
       </div>
-      <div className="absolute inset-0 z-0 bg-gradient-to-t from-paper via-paper/70 to-transparent md:hidden" />
-      <div className="absolute inset-0 z-0 hidden bg-paper/30 backdrop-blur-[1px] md:block" />
+      <div className="absolute inset-0 z-0 bg-gradient-to-t from-paper/80 via-paper/10 to-transparent md:hidden" />
+      <div className="absolute inset-0 z-0 hidden bg-paper/10 md:block" />
 
-      <div className="z-10 mb-6 w-full max-w-lg rounded-3xl border-2 border-sand bg-paper2/90 p-8 shadow-2xl backdrop-blur-md md:mb-0">
-        <div className="mb-8">
+      <div className="relative z-10 m-auto w-full max-w-lg rounded-3xl border-2 border-sand bg-paper2/90 p-6 shadow-2xl backdrop-blur-md sm:p-8">
+        <div className="mb-6 sm:mb-8">
           <h1 className="type-display mb-3 text-4xl text-ink md:text-5xl">
             ENTRE PAISAGENS
           </h1>
@@ -86,12 +87,31 @@ export function HomeView() {
             </button>
           </div>
 
-          <Link
-            href="/sobre"
-            className="pt-1 text-xs font-bold text-inkMuted transition-colors hover:text-ink"
-          >
-            Sobre &middot; Metodologia
-          </Link>
+          <div className="flex flex-col items-center gap-1 pt-1">
+            <Link
+              href="/sobre"
+              className="text-xs font-bold text-inkMuted transition-colors hover:text-ink"
+            >
+              Sobre &middot; Metodologia
+            </Link>
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-inkMuted">
+              <button
+                type="button"
+                onClick={() => setLegalDoc('terms')}
+                className="underline hover:text-ink"
+              >
+                Termos de Uso
+              </button>
+              <span aria-hidden="true">&middot;</span>
+              <button
+                type="button"
+                onClick={() => setLegalDoc('privacy')}
+                className="underline hover:text-ink"
+              >
+                Privacidade
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </main>

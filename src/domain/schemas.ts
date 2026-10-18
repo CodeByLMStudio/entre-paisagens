@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { isWithinFortaleza } from '@/lib/geo';
+import { isWithinBrazil } from '@/lib/geo';
 import {
+  CONDITION_OPTIONS,
   EIXOS,
   LANDSCAPE_DIMENSIONS_LIST,
   RELACOES,
@@ -19,42 +20,65 @@ export const mediaTypeSchema = z.enum(['photo', 'audio', 'both', 'none']);
 // Perfil sociodemográfico (Passo 1)
 // ---------------------------------------------------------------------------
 
-export const profileSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, 'Informe seu nome ou apelido.')
-    .max(80, 'Nome muito longo (máx. 80 caracteres).'),
-  ageGroup: z.string().trim().min(1, 'Selecione sua faixa etária.'),
-  neighborhood: z.string().trim().min(1, 'Selecione o bairro onde mora.'),
-  residenceDuration: z
-    .string()
-    .trim()
-    .min(1, 'Selecione o tempo de moradia.'),
-  relation: relacaoSchema,
-  frequency: z.string().default('Diariamente'),
-  timeOfDay: z.string().default('Manhã'),
-  transport: z.string().default('A pé'),
-  company: z.string().default('Sozinho'),
-  influencingFactors: z.array(z.string()).default([]),
-  neurodivergenceStatus: z
-    .string()
-    .trim()
-    .min(1, 'Selecione sua condição / percepção.'),
-  sensoryMobilityNotes: z.string().trim().max(500).default(''),
-});
+export const profileSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .max(80, 'Nome muito longo (máx. 80 caracteres).'),
+    isAnonymous: z.boolean().default(false),
+    ageGroup: z.string().trim().min(1, 'Selecione sua faixa etária.'),
+    state: z.string().trim().min(1, 'Selecione o estado.'),
+    city: z.string().trim().min(1, 'Selecione a cidade.'),
+    neighborhood: z.string().trim().min(1, 'Selecione o bairro.'),
+    residenceDuration: z
+      .string()
+      .trim()
+      .min(1, 'Selecione o tempo de moradia.'),
+    relation: relacaoSchema,
+    frequency: z.string().default('Diariamente'),
+    timeOfDay: z.string().default('Manhã'),
+    transport: z.string().default('A pé'),
+    company: z.string().default('Sozinho'),
+    influencingFactors: z.array(z.string()).default([]),
+    conditions: z
+      .array(z.enum(CONDITION_OPTIONS))
+      .min(1, 'Selecione ao menos uma condição/percepção.'),
+    sensoryMobilityNotes: z.string().trim().max(500).default(''),
+  })
+  .superRefine((data, ctx) => {
+    // O nome é obrigatório, exceto quando a pessoa escolheu não se identificar.
+    if (!data.isAnonymous && data.name.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Informe seu nome ou apelido, ou escolha "Prefiro não informar".',
+        path: ['name'],
+      });
+    }
+  });
 
 // ---------------------------------------------------------------------------
 // Passo 2 — Sobre o lugar
 // ---------------------------------------------------------------------------
 
-export const step2Schema = z.object({
-  relation: relacaoSchema,
-  eixo: eixoSchema,
-  dimensions: z
-    .array(dimensionSchema)
-    .min(1, 'Selecione ao menos uma dimensão paisagística.'),
-});
+export const step2Schema = z
+  .object({
+    relation: relacaoSchema,
+    relationOther: z.string().trim().max(500, 'Máximo de 500 caracteres.').default(''),
+    eixo: eixoSchema,
+    dimensions: z
+      .array(dimensionSchema)
+      .min(1, 'Selecione ao menos uma dimensão paisagística.'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.relation === 'Outra' && data.relationOther.trim().length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Explique sua relação com o espaço.',
+        path: ['relationOther'],
+      });
+    }
+  });
 
 // ---------------------------------------------------------------------------
 // Passo 3 — Relato e localização
@@ -64,14 +88,20 @@ export const step3Schema = z
   .object({
     lat: z.number({ required_error: 'Informe a latitude.' }),
     lng: z.number({ required_error: 'Informe a longitude.' }),
+    locationSource: z
+      .string()
+      .refine((value) => ['gps', 'map', 'address'].includes(value), {
+        message: 'Informe a localização do relato.',
+      }),
+    isOnSite: z.boolean(),
     proposal: z
       .string()
       .trim()
       .min(10, 'Escreva um relato com pelo menos 10 caracteres.')
       .max(2000, 'Relato muito longo (máx. 2000 caracteres).'),
   })
-  .refine((d) => isWithinFortaleza(d.lat, d.lng), {
-    message: 'A localização selecionada está fora dos limites de Fortaleza.',
+  .refine((d) => isWithinBrazil(d.lat, d.lng), {
+    message: 'A localização selecionada está fora do território brasileiro.',
     path: ['lat'],
   });
 
@@ -97,6 +127,9 @@ export const experienceSchema = z
     mediaType: mediaTypeSchema.optional(),
     mediaUrl: z.string().nullable().optional(),
     relation: relacaoSchema,
+    relationOther: z.string().trim().max(500).optional().default(''),
+    locationSource: z.enum(['gps', 'map', 'address']).optional().default('map'),
+    isOnSite: z.boolean().optional().default(false),
     proposal: z
       .string()
       .trim()
@@ -110,8 +143,8 @@ export const experienceSchema = z
     facilitators: z.array(z.string()).default([]),
     difficulties: z.array(z.string()).default([]),
   })
-  .refine((d) => isWithinFortaleza(d.lat, d.lng), {
-    message: 'A localização selecionada está fora dos limites de Fortaleza.',
+  .refine((d) => isWithinBrazil(d.lat, d.lng), {
+    message: 'A localização selecionada está fora do território brasileiro.',
     path: ['lat'],
   });
 

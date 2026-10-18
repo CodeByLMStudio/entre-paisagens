@@ -7,7 +7,7 @@ import {
   Building,
   Camera,
   CheckCircle2,
-  Hash,
+  Loader2,
   MapPin,
   Mic,
   MousePointerClick,
@@ -26,6 +26,7 @@ import { issuesToRecord } from '@/lib/zodUtils';
 import { useCollectionStore } from '@/stores/collectionStore';
 import { useMapStore } from '@/stores/mapStore';
 import { useUiStore } from '@/stores/uiStore';
+import { StepLayout } from './StepLayout';
 
 export function Step3Media() {
   const form = useCollectionStore((s) => s.form);
@@ -37,27 +38,45 @@ export function Step3Media() {
   const router = useRouter();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [confirmAddress, setConfirmAddress] = useState(false);
-  const [detectedStreet, setDetectedStreet] = useState<string>('');
-  const [editingAddress, setEditingAddress] = useState(false);
+  const [confirmGpsAddress, setConfirmGpsAddress] = useState(false);
+  const [detectedStreet, setDetectedStreet] = useState('');
+  const [askOnSite, setAskOnSite] = useState(false);
+  const [manualAddressHint, setManualAddressHint] = useState(false);
   const { getCurrentLocation, isLocating } = useLocationServices();
   const media = useMediaCapture({ onError: (message) => showToast(message, 'error') });
+
+  const clearLocationError = () => {
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.locationSource;
+      return next;
+    });
+  };
 
   const handleUseGps = async () => {
     const street = await getCurrentLocation();
     if (street) {
       setDetectedStreet(street);
-      setConfirmAddress(true);
-      setEditingAddress(false);
+      setConfirmGpsAddress(true);
+      setAskOnSite(false);
+      setManualAddressHint(false);
+      clearLocationError();
     }
   };
 
-  const handleConfirmAddress = (correct: boolean) => {
+  const handleConfirmGps = (correct: boolean) => {
+    setConfirmGpsAddress(false);
+
     if (correct) {
-      setConfirmAddress(false);
+      updateForm({ locationSource: 'gps', isOnSite: true });
+      setManualAddressHint(false);
+      setAskOnSite(false);
+      clearLocationError();
     } else {
-      setConfirmAddress(false);
-      setEditingAddress(true);
+      // GPS encontrou o endereço errado: o usuário informa o correto abaixo.
+      setManualAddressHint(true);
+      setAskOnSite(false);
+      updateForm({ locationSource: '', isOnSite: false });
     }
   };
 
@@ -71,13 +90,33 @@ export function Step3Media() {
       lat: result.lat,
       lng: result.lng,
       streetName: result.streetName ?? result.label,
+      locationSource: 'address',
+      isOnSite: false,
     });
+    setManualAddressHint(false);
+    setAskOnSite(true);
+    clearLocationError();
+  };
+
+  const handleOnSiteAnswer = (isOnSite: boolean) => {
+    setAskOnSite(false);
+    updateForm({ locationSource: 'address', isOnSite });
+    clearLocationError();
   };
 
   const handleNext = () => {
+    if (confirmGpsAddress || askOnSite) {
+      setErrors({
+        locationSource: 'Confirme a localização do relato antes de prosseguir.',
+      });
+      return;
+    }
+
     const result = step3Schema.safeParse({
       lat: form.lat,
       lng: form.lng,
+      locationSource: form.locationSource,
+      isOnSite: form.isOnSite,
       proposal: form.proposal,
     });
     if (!result.success) {
@@ -104,8 +143,32 @@ export function Step3Media() {
     if (url) updateForm({ audioUrl: url });
   };
 
+  const locationStatusLabel =
+    form.locationSource === 'gps'
+      ? 'Registrado no local (GPS)'
+      : form.locationSource === 'map'
+        ? 'Marcado no mapa'
+        : form.locationSource === 'address'
+          ? form.isOnSite
+            ? 'Registrado no local (endereço informado)'
+            : 'Endereço pesquisado (registro à distância)'
+          : 'Local ainda não informado';
+
   return (
-    <div className="flex flex-col gap-6">
+    <>
+      <StepLayout
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => setStep(2)} className="flex-1">
+              VOLTAR
+            </Button>
+            <Button onClick={handleNext} className="flex-1">
+              REVISAR DADOS
+            </Button>
+          </div>
+        }
+      >
+      <div className="flex flex-col gap-6">
       <div>
         <h2 className="type-display mb-1 text-2xl text-ink">3. Relato e Mídias</h2>
         <p className="text-xs font-semibold text-inkMuted">
@@ -124,9 +187,14 @@ export function Step3Media() {
             onClick={() => void handleUseGps()}
             disabled={isLocating}
             className="flex-1"
+            aria-busy={isLocating}
           >
-            <Navigation size={14} />
-            {isLocating ? 'Obtendo...' : 'Usar GPS atual'}
+            {isLocating ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Navigation size={14} />
+            )}
+            {isLocating ? 'Obtendo...' : 'Estou no local (GPS)'}
           </Button>
           <Button variant="dark" onClick={handlePickOnMap} className="flex-1">
             <MousePointerClick size={14} /> Marcar no mapa
@@ -134,7 +202,7 @@ export function Step3Media() {
         </div>
 
         {/* Confirmação do endereço detectado pelo GPS */}
-        {confirmAddress && (
+        {confirmGpsAddress && (
           <div className="mb-3 flex flex-col gap-3 rounded-2xl border-2 border-clay bg-paper p-4">
             <div className="flex items-start gap-2">
               <MapPin size={18} className="mt-0.5 shrink-0 text-clay" />
@@ -146,12 +214,12 @@ export function Step3Media() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => handleConfirmAddress(true)} className="flex-1">
+              <Button onClick={() => handleConfirmGps(true)} className="flex-1">
                 Sim, está correto
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => handleConfirmAddress(false)}
+                onClick={() => handleConfirmGps(false)}
                 className="flex-1"
               >
                 Não, informar endereço
@@ -160,44 +228,53 @@ export function Step3Media() {
           </div>
         )}
 
+        {askOnSite && (
+          <div className="mb-3 flex flex-col gap-3 rounded-2xl border-2 border-moss bg-paper p-4">
+            <div className="flex items-start gap-2">
+              <MapPin size={18} className="mt-0.5 shrink-0 text-moss" />
+              <div className="text-sm text-ink">
+                <p className="font-bold">Você está neste local?</p>
+                <p className="mt-1 text-xs text-inkMuted">
+                  {form.streetName || 'Endereço selecionado.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => handleOnSiteAnswer(true)} className="flex-1">
+                Sim, estou aqui
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => handleOnSiteAnswer(false)}
+                className="flex-1"
+              >
+                Não, à distância
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col gap-3 rounded-2xl border-2 border-sand bg-white p-4">
           <div className="flex items-center gap-2 text-xs font-bold text-inkMuted">
             <Building size={16} className="text-clay" />
-            <span>
-              {editingAddress
-                ? 'Informe o endereço:'
-                : 'Rua ou logradouro detectado automaticamente:'}
-            </span>
+            <span>Pesquise o endereço (rua ou logradouro):</span>
           </div>
 
-          {editingAddress ? (
-            <AddressAutocomplete
-              id="step3-address"
-              value={form.streetName}
-              onSelect={handleSelectAddress}
-              placeholder="Digite a rua ou endereço..."
-            />
-          ) : (
-            <input
-              type="text"
-              value={form.streetName}
-              onChange={(e) => updateForm({ streetName: e.target.value })}
-              placeholder="Nome da rua identificado..."
-              className={`${inputClass} bg-paper/60 font-bold`}
-            />
-          )}
-
-          <div className="mt-1 flex items-center gap-2 text-xs font-bold text-inkMuted">
-            <Hash size={16} className="text-clay" />
-            <span>Numeração (opcional):</span>
-          </div>
-          <input
-            type="text"
-            value={form.streetNumber}
-            onChange={(e) => updateForm({ streetNumber: e.target.value })}
-            placeholder="Ex: 1200"
-            className={inputClass}
+          <AddressAutocomplete
+            id="step3-address"
+            value={form.streetName}
+            onSelect={handleSelectAddress}
+            placeholder="Digite a rua ou endereço em qualquer cidade do Brasil..."
           />
+          <span className="text-[10px] font-medium text-inkMuted">
+            Selecione uma sugestão para definir as coordenadas do relato.
+          </span>
+
+          {manualAddressHint && (
+            <span className="rounded-lg bg-clay/10 px-3 py-2 text-[11px] font-bold text-clayDark">
+              Informe abaixo o endereço correto do local onde você está.
+            </span>
+          )}
 
           <div className="mt-1 flex items-center gap-2 text-xs font-bold text-inkMuted">
             <MapPin size={16} className="text-clay" />
@@ -211,15 +288,30 @@ export function Step3Media() {
             className={inputClass}
           />
           <span className="text-[10px] font-medium text-inkMuted">
-            * Informar o número ou ponto de referência facilita a precisão exata da
+            * Informar um ponto de referência facilita a identificação do local da
             experiência relatada.
           </span>
         </div>
 
-        <p className="type-alt mt-2 flex items-center gap-1 text-[10px] font-medium text-clay">
-          <CheckCircle2 size={12} /> Coordenadas cartográficas: ({form.lat.toFixed(4)},{' '}
-          {form.lng.toFixed(4)})
-        </p>
+        <div className="mt-2 flex flex-col gap-1">
+          <p className="type-alt flex items-center gap-1 text-[10px] font-medium text-clay">
+            <CheckCircle2 size={12} /> Coordenadas cartográficas: ({form.lat.toFixed(4)},{' '}
+            {form.lng.toFixed(4)})
+          </p>
+          <p className="text-[10px] font-bold text-inkMuted">
+            Forma de registro: <span className="text-ink">{locationStatusLabel}</span>
+          </p>
+          {errors.locationSource && (
+            <span role="alert" className="text-[11px] font-bold text-clayDark">
+              {errors.locationSource}
+            </span>
+          )}
+          {errors.lat && (
+            <span role="alert" className="text-[11px] font-bold text-clayDark">
+              {errors.lat}
+            </span>
+          )}
+        </div>
       </div>
 
       <Field
@@ -317,14 +409,8 @@ export function Step3Media() {
         </div>
       </div>
 
-      <div className="mt-auto flex gap-3 pt-4">
-        <Button variant="secondary" onClick={() => setStep(2)} className="flex-1">
-          VOLTAR
-        </Button>
-        <Button onClick={handleNext} className="flex-1">
-          REVISAR DADOS
-        </Button>
       </div>
+      </StepLayout>
 
       {/* Câmera em tela cheia — pré-visualização em tempo real */}
       {media.isCameraActive && (
@@ -356,6 +442,6 @@ export function Step3Media() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

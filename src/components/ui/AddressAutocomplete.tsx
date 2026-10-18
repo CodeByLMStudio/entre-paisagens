@@ -16,7 +16,7 @@ interface AddressAutocompleteProps {
 
 /**
  * Campo de busca de endereço com autocomplete em tempo real (Nominatim).
- * Ao digitar, sugere possíveis endereços de Fortaleza; ao selecionar um,
+ * Ao digitar, sugere possíveis endereços em todo o Brasil; ao selecionar um,
  * devolve o rótulo e as coordenadas correspondentes.
  */
 export function AddressAutocomplete({

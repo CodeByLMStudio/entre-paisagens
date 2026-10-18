@@ -2,18 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ZoomableImageProps {
   src: string;
   alt: string;
   className?: string;
+  triggerClassName?: string;
+  /** Tooltip do gatilho (ex.: "Clique para visualizar a imagem"). */
+  triggerTitle?: string;
+  children?: React.ReactNode;
 }
 
 /**
  * Imagem que abre em um lightbox (popup) ao ser clicada.
  * Fecha com Escape, clique no backdrop ou no botão de fechar.
+ * Aceita um gatilho customizado via `children`.
  */
-export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
+export function ZoomableImage({
+  src,
+  alt,
+  className,
+  triggerClassName,
+  triggerTitle,
+  children,
+}: ZoomableImageProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -37,11 +50,18 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="block w-full cursor-zoom-in"
+        className={cn(
+          'cursor-zoom-in',
+          !children && 'block w-full',
+          triggerClassName,
+        )}
         aria-label={`Ampliar imagem: ${alt}`}
+        title={triggerTitle ?? `Ampliar imagem: ${alt}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} className={className} />
+        {children ?? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt={alt} className={className} />
+        )}
       </button>
 
       {open && (

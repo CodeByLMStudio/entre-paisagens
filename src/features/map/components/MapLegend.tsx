@@ -18,7 +18,7 @@ export function MapLegend() {
             {/* Título da legenda — Montserrat SemiBold, caixa alta, tracking 1,5–2pt */}
             <div className="type-label flex items-center gap-1.5 text-[10px]">
               <Layers size={14} className="text-clay" />
-              <span>LEGENDA E EIXOS</span>
+              <span>Legenda - Mapa</span>
             </div>
             <button
               type="button"
@@ -78,7 +78,7 @@ export function MapLegend() {
           className="type-label flex items-center gap-2 rounded-xl border-2 border-sand bg-paper/95 px-3.5 py-2 text-[10px] text-ink shadow-lg backdrop-blur-md hover:bg-paper2"
         >
           <Layers size={14} className="text-clay" />
-          <span>Legenda Cartográfica</span>
+          <span>Legenda - Mapa</span>
         </button>
       )}
 

@@ -26,7 +26,7 @@ export const EIXO_DESCRIPTIONS: Record<(typeof EIXOS)[number], string> = {
   VIVER:
     'O cotidiano, o uso prático, a rotina e a vivência direta dos espaços urbanos.',
   SENTIR:
-    'As emoções, afetos, a segurança percebida, o aconchego ou incômodo despertados pelo lugar.',
+    'As emoções, afetos, a segurança, o aconchego ou incômodo despertados pelo lugar.',
   IMAGINAR:
     'Os desejos de transformação, propostas e visões de futuro para a paisagem urbana.',
 };
@@ -44,7 +44,7 @@ export const LANDSCAPE_DIMENSIONS_LIST = [
   'Vegetação e natureza',
   'Orientação e legibilidade',
   'Experiência sensorial',
-  'Security / Segurança percebida',
+  'Segurança',
   'Sociabilidade',
   'Manutenção e conservação',
   'Desejos de transformação',
@@ -70,7 +70,7 @@ export const LANDSCAPE_DIMENSION_DESCRIPTIONS: Record<
     'Clareza visual, sinalização e facilidade de reconhecimento e navegação do espaço urbano.',
   'Experiência sensorial':
     'Estímulos auditivos, olfativos, táteis e visuais presentes na paisagem urbana.',
-  'Security / Segurança percebida':
+  Segurança:
     'Sensação subjetiva de segurança pública, iluminação e proteção contra criminalidade.',
   Sociabilidade:
     'Oportunidades de encontro, convivência social e interações comunitárias.',
@@ -110,6 +110,15 @@ export const RESIDENCE_DURATION_OPTIONS = [
   'A vida toda',
 ] as const;
 
+/** Opção especial do campo "Nome ou apelido": publica o relato como anônimo. */
+export const ANONYMOUS_OPTION = 'Prefiro não informar';
+
+/** Nome exibido nos relatos registrados de forma anônima. */
+export const ANONYMOUS_DISPLAY_NAME = 'Anônimo';
+
+/** Valor interno usado no estado quando a pessoa prefere não informar o nome. */
+export const ANONYMOUS_SELECTION = '__anonymous__';
+
 export const AGE_GROUP_OPTIONS = [
   'até 12 anos',
   '13-17',
@@ -120,9 +129,15 @@ export const AGE_GROUP_OPTIONS = [
   '60+',
 ] as const;
 
-export const NEURODIVERGENCE_OPTIONS = [
-  'Sou uma pessoa neurodivergente',
-  'Não Possuo',
+export const CONDITION_OPTIONS = [
+  'Pessoa neurodivergente',
+  'Pessoa com deficiência visual ou baixa visão',
+  'Pessoa com deficiência auditiva ou surdez',
+  'Pessoa com deficiência física ou mobilidade reduzida',
+  'Pessoa com deficiência intelectual',
+  'Pessoa com deficiência múltipla',
+  'Outra condição',
+  'Não me identifico com nenhuma dessas condições',
   'Não sei informar',
   'Prefiro não responder',
 ] as const;
@@ -204,7 +219,10 @@ export const NEIGHBORHOODS_FALLBACK = [
 
 export const INITIAL_PROFILE: UserProfile = {
   name: '',
+  isAnonymous: false,
   ageGroup: '',
+  state: '',
+  city: '',
   neighborhood: '',
   residenceDuration: '',
   relation: 'Moro próximo',
@@ -213,7 +231,7 @@ export const INITIAL_PROFILE: UserProfile = {
   transport: 'A pé',
   company: 'Sozinho',
   influencingFactors: [],
-  neurodivergenceStatus: '',
+  conditions: [],
   sensoryMobilityNotes: '',
 };
 

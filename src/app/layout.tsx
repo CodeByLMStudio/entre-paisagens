@@ -4,7 +4,9 @@ import './globals.css';
 import { AppFooter } from '@/components/layout/AppFooter';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppProviders } from '@/components/layout/AppProviders';
+import { ConsentModal } from '@/components/modals/ConsentModal';
 import { ContactModal } from '@/components/modals/ContactModal';
+import { LegalModal } from '@/components/modals/LegalModal';
 import { TutorialModal } from '@/components/modals/TutorialModal';
 import { Toast } from '@/components/ui/Toast';
 import { CollectionModal } from '@/features/collection/components/CollectionModal';
@@ -35,8 +37,10 @@ export default function RootLayout({
           <AppFooter />
           <Toast />
           <CollectionModal />
+          <ConsentModal />
           <ContactModal />
           <TutorialModal />
+          <LegalModal />
         </AppProviders>
       </body>
     </html>

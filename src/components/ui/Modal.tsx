@@ -11,6 +11,9 @@ interface ModalProps {
   children: React.ReactNode;
   className?: string;
   showClose?: boolean;
+  /** Quando falso, o conteúdo controla a própria rolagem (ex.: rodapé fixo). */
+  scrollable?: boolean;
+  bodyClassName?: string;
 }
 
 /**
@@ -25,6 +28,8 @@ export function Modal({
   children,
   className,
   showClose = true,
+  scrollable = true,
+  bodyClassName,
 }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -38,8 +43,12 @@ export function Modal({
   useEffect(() => {
     if (!open) return;
 
+    // Impede que um drawer por baixo também reaja à tecla Escape.
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
+      if (event.key === 'Escape') {
+        event.stopImmediatePropagation();
+        onCloseRef.current();
+      }
     };
 
     document.addEventListener('keydown', onKeyDown);
@@ -93,7 +102,13 @@ export function Modal({
             )}
           </header>
         )}
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        {scrollable ? (
+          <div className={cn('flex-1 overflow-y-auto', bodyClassName)}>{children}</div>
+        ) : (
+          <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', bodyClassName)}>
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );

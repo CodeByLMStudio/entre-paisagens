@@ -58,3 +58,33 @@
   background: transparent;
   border: none;
 }
+
+/* ---------------------------------------------------------------------------
+ * Tooltip dos marcadores do mapa (resumo do relato ao passar o mouse).
+ * ------------------------------------------------------------------------- */
+
+.ep-tooltip.leaflet-tooltip {
+  max-width: 240px;
+  padding: 8px 10px;
+  border: 2px solid #ddbd8c;
+  border-radius: 12px;
+  background: #f9eed8;
+  color: #42422a;
+  font-family: var(--font-lato), system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-line;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.ep-tooltip.leaflet-tooltip::before {
+  border-top-color: #ddbd8c;
+}
+
+.ep-tooltip.leaflet-tooltip-top::before {
+  border-top-color: #ddbd8c;
+}
+
+.ep-tooltip.leaflet-tooltip-bottom::before {
+  border-bottom-color: #ddbd8c;
+}

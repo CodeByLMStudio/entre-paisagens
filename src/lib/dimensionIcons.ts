@@ -26,7 +26,7 @@ export const DIMENSION_ICONS: Record<LandscapeDimension, LucideIcon> = {
   'Vegetação e natureza': Leaf,
   'Orientação e legibilidade': MapPinned,
   'Experiência sensorial': Waves,
-  'Security / Segurança percebida': ShieldCheck,
+  Segurança: ShieldCheck,
   Sociabilidade: HeartHandshake,
   'Manutenção e conservação': Recycle,
   'Desejos de transformação': Lightbulb,

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Field } from '@/components/ui/Field';
+import { Field, inputClass } from '@/components/ui/Field';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { EixoInfoModal } from '@/components/modals/EixoInfoModal';
 import {
@@ -19,6 +19,7 @@ import type { Eixo, LandscapeDimension } from '@/domain/types';
 import { cn } from '@/lib/utils';
 import { issuesToRecord } from '@/lib/zodUtils';
 import { useCollectionStore } from '@/stores/collectionStore';
+import { StepLayout } from './StepLayout';
 
 function toggleItem<T>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
@@ -46,6 +47,7 @@ export function Step2Location() {
   const handleNext = () => {
     const result = step2Schema.safeParse({
       relation: form.relation,
+      relationOther: form.relationOther,
       eixo: form.eixo,
       dimensions: form.dimensions,
     });
@@ -58,7 +60,19 @@ export function Step2Location() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <StepLayout
+      footer={
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">
+            VOLTAR
+          </Button>
+          <Button onClick={handleNext} className="flex-1">
+            PRÓXIMO
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-5">
       <div>
         <h2 className="type-display mb-1 text-2xl text-ink">2. Sobre o lugar</h2>
         <p className="text-xs font-semibold text-inkMuted">
@@ -74,6 +88,24 @@ export function Step2Location() {
           options={RELACOES.map((relation) => ({ value: relation, label: relation }))}
         />
       </Field>
+
+      {form.relation === 'Outra' && (
+        <Field
+          label="Explique sua relação com o espaço"
+          required
+          htmlFor="step2-relation-other"
+          error={errors.relationOther}
+        >
+          <textarea
+            id="step2-relation-other"
+            rows={3}
+            value={form.relationOther}
+            onChange={(e) => updateForm({ relationOther: e.target.value })}
+            placeholder="Conte como você se relaciona com este lugar..."
+            className={`${inputClass} resize-none`}
+          />
+        </Field>
+      )}
 
       <div>
         <label className="type-label mb-1.5 block text-xs text-inkMuted">
@@ -215,16 +247,8 @@ export function Step2Location() {
         </div>
       </div>
 
-      <div className="mt-4 flex gap-3">
-        <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">
-          VOLTAR
-        </Button>
-        <Button onClick={handleNext} className="flex-1">
-          PRÓXIMO
-        </Button>
-      </div>
-
       <EixoInfoModal eixo={infoEixo} onClose={() => setInfoEixo(null)} />
-    </div>
+      </div>
+    </StepLayout>
   );
 }

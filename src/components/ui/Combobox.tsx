@@ -12,6 +12,9 @@ interface ComboboxProps {
   options: string[];
   placeholder?: string;
   className?: string;
+  /** Limite de itens renderizados por vez (a busca continua em toda a lista). */
+  maxResults?: number;
+  emptyMessage?: string;
 }
 
 /** Normaliza removendo acentos e caixa, para busca tolerante ("jose" → "José"). */
@@ -34,6 +37,8 @@ export function Combobox({
   options,
   placeholder,
   className,
+  maxResults = 100,
+  emptyMessage = 'Nenhuma opção encontrada.',
 }: ComboboxProps) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
@@ -45,6 +50,11 @@ export function Combobox({
     if (!q) return options;
     return options.filter((option) => normalize(option).includes(q));
   }, [options, query]);
+
+  const visible = useMemo(
+    () => filtered.slice(0, maxResults),
+    [filtered, maxResults],
+  );
 
   // Mantém o texto sincronizado quando o valor é alterado externamente.
   useEffect(() => {
@@ -80,13 +90,13 @@ export function Combobox({
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setOpen(true);
-      setHighlighted((h) => Math.min(h + 1, filtered.length - 1));
+      setHighlighted((h) => Math.min(h + 1, visible.length - 1));
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       setHighlighted((h) => Math.max(h - 1, 0));
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      const selected = open ? filtered[highlighted] : undefined;
+      const selected = open ? visible[highlighted] : undefined;
       if (selected) selectOption(selected);
     } else if (event.key === 'Escape') {
       setOpen(false);
@@ -128,7 +138,7 @@ export function Combobox({
               role="listbox"
               className="max-h-48 overflow-y-auto"
             >
-              {filtered.map((option, index) => (
+              {visible.map((option, index) => (
                 <li
                   key={option}
                   role="option"
@@ -147,11 +157,15 @@ export function Combobox({
                   {option}
                 </li>
               ))}
+              {filtered.length > visible.length && (
+                <li className="border-t border-paper2 px-3.5 py-2 text-[10px] font-semibold text-inkMuted">
+                  {filtered.length - visible.length} resultados ocultos. Digite para
+                  refinar a busca.
+                </li>
+              )}
             </ul>
           ) : (
-            <div className="px-3.5 py-3 text-xs text-inkMuted">
-              Nenhum bairro encontrado.
-            </div>
+            <div className="px-3.5 py-3 text-xs text-inkMuted">{emptyMessage}</div>
           )}
         </div>
       )}

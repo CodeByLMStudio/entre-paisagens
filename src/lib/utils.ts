@@ -26,22 +26,17 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Monta o texto de número/ponto de referência de um endereço a partir dos
- * campos estruturados, com compatibilidade com o campo legado
- * `streetNumberOrObs`.
+ * Monta o texto de referência de um endereço. O número não é mais coletado
+ * nem exibido; mantém-se apenas a observação/ponto de referência e o campo
+ * legado `streetNumberOrObs`.
  */
 export function formatAddressDetail(
   experience: {
-    streetNumber?: string;
     streetReference?: string;
     streetNumberOrObs?: string;
   },
 ): string {
-  const number = experience.streetNumber?.trim();
   const reference = experience.streetReference?.trim();
-
-  if (number && reference) return `${number} — ${reference}`;
-  if (number) return number;
   if (reference) return reference;
   return experience.streetNumberOrObs?.trim() ?? '';
 }

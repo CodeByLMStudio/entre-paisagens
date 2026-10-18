@@ -6,13 +6,16 @@ import { Info } from 'lucide-react';
 import { EixoInfoModal } from '@/components/modals/EixoInfoModal';
 import { EIXOS, EIXO_COLORS, EIXO_DESCRIPTIONS } from '@/domain/constants';
 import type { Eixo } from '@/domain/types';
+import { useUiStore } from '@/stores/uiStore';
 
 export function AboutView() {
   const [infoEixo, setInfoEixo] = useState<Eixo | null>(null);
+  const setLegalDoc = useUiStore((s) => s.setLegalDoc);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-paper p-6 md:p-12">
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 rounded-3xl border-2 border-sand bg-white p-8 shadow-xl md:p-12">
+    <div className="flex-1 overflow-y-auto bg-paper">
+      <div className="flex min-h-full items-center justify-center p-6 md:p-12">
+        <div className="flex w-full max-w-4xl flex-col gap-6 rounded-3xl border-2 border-sand bg-white p-8 shadow-xl md:p-12">
         <div className="flex items-center justify-between border-b border-paper2 pb-4">
           <div>
             <span className="type-label text-xs text-clay">
@@ -67,11 +70,30 @@ export function AboutView() {
 
           <h3 className="type-display mt-2 text-lg text-ink">Objetivo</h3>
           <p className="font-medium">
-            Subsidiary políticas públicas, diagnósticos urbanos e ações comunitárias
-            através da coleta de relatos qualitativos diretamente de moradores e
-            visitantes por toda a cidade de Fortaleza.
+            Reunir e organizar contribuições dos participantes em uma base
+            cartográfica coletiva, permitindo identificar como diferentes
+            experiências e formas de vivenciar os espaços se relacionam com os
+            lugares da cidade.
           </p>
+
+          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 border-t border-paper2 pt-4 text-xs font-bold text-clay">
+            <button
+              type="button"
+              onClick={() => setLegalDoc('terms')}
+              className="underline hover:text-clayDark"
+            >
+              Termos de Uso
+            </button>
+            <button
+              type="button"
+              onClick={() => setLegalDoc('privacy')}
+              className="underline hover:text-clayDark"
+            >
+              Política de Privacidade
+            </button>
+          </div>
         </div>
+      </div>
       </div>
 
       <EixoInfoModal eixo={infoEixo} onClose={() => setInfoEixo(null)} />

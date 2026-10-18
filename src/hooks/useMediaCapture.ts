@@ -12,6 +12,19 @@ export const MAX_AUDIO_SECONDS = 30;
 /** Tamanho máximo da imagem comprimida (bytes) — 0.5 MB. */
 export const MAX_IMAGE_BYTES = 0.5 * 1024 * 1024;
 
+/** Tamanho máximo do áudio comprimido (bytes) — 0.4 MB. */
+export const MAX_AUDIO_BYTES = 0.4 * 1024 * 1024;
+
+/** Converte um Blob em data URL (string persistente, independente da aba). */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 /**
  * Encapsula a captura de mídia (câmera e microfone) usada no passo de relato.
  *
@@ -149,7 +162,15 @@ export function useMediaCapture(options?: MediaCaptureOptions) {
     chunksRef.current = [];
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const preferredType =
+        typeof MediaRecorder !== 'undefined' &&
+        ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((type) =>
+          MediaRecorder.isTypeSupported(type),
+        );
+      const mediaRecorder = new MediaRecorder(
+        stream,
+        preferredType ? { audioBitsPerSecond: 48_000, mimeType: preferredType } : undefined,
+      );
       recorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -158,7 +179,8 @@ export function useMediaCapture(options?: MediaCaptureOptions) {
         }
       };
 
-      mediaRecorder.start();
+      // Emite chunks periodicamente para não depender apenas do evento final.
+      mediaRecorder.start(250);
       setIsRecording(true);
       setRecordingTime(0);
       timerRef.current = setInterval(() => {
@@ -188,17 +210,38 @@ export function useMediaCapture(options?: MediaCaptureOptions) {
 
     return new Promise<string | null>((resolve) => {
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        objectUrlsRef.current.push(url);
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        chunksRef.current = [];
         recorderRef.current = null;
-        resolve(url);
+
+        if (blob.size === 0) {
+          onError?.('Nenhum áudio foi capturado. Tente gravar novamente.');
+          resolve(null);
+          return;
+        }
+
+        // Data URL (e não blob:) para que o áudio continue disponível depois
+        // de ser salvo no armazenamento local e acessado em outra aba/visita.
+        blobToDataUrl(blob)
+          .then((dataUrl) => {
+            if (blob.size > MAX_AUDIO_BYTES) {
+              onError?.(
+                'Áudio muito longo para ser salvo. Grave um relato mais curto.',
+              );
+            }
+            resolve(dataUrl);
+          })
+          .catch(() => {
+            onError?.('Não foi possível processar o áudio gravado.');
+            resolve(null);
+          });
       };
 
       recorder.stop();
       recorder.stream.getTracks().forEach((track) => track.stop());
     });
-  }, []);
+  }, [onError]);
 
   // Limpeza de recursos no unmount.
   /* eslint-disable react-hooks/exhaustive-deps */

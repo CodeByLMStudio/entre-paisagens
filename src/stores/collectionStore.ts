@@ -19,12 +19,14 @@ function createExperienceDraft(
     lng,
     locationNeighborhood,
     streetName,
-    streetNumber: '',
     streetReference: '',
     eixo: 'PERCEBER',
     photoUrl: null,
     audioUrl: null,
     relation: 'Moro próximo',
+    relationOther: '',
+    locationSource: '',
+    isOnSite: false,
     proposal: '',
     date: new Date().toISOString(),
     dimensions: [],
@@ -37,6 +39,7 @@ function cloneInitialProfile(): UserProfile {
   return {
     ...INITIAL_PROFILE,
     influencingFactors: [...INITIAL_PROFILE.influencingFactors],
+    conditions: [...INITIAL_PROFILE.conditions],
   };
 }
 

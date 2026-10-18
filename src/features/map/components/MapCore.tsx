@@ -3,20 +3,19 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { FORTALEZA_BOUNDS, FORTALEZA_CENTER, FORTALEZA_PIN_ZOOM } from '@/lib/geo';
+import { BRAZIL_BOUNDS, FORTALEZA_CENTER, FORTALEZA_PIN_ZOOM } from '@/lib/geo';
 import type { Eixo, MapPoint } from '@/domain/types';
 import type { MapContainerProps } from '../types';
-import { fetchFortalezaBoundary } from '@/lib/boundary';
 import { experienceMarkerHtml, pendingMarkerHtml } from '../lib/markers';
 import { MapCompass } from './MapCompass';
 import { MapLegend } from './MapLegend';
 
 const DEFAULT_ZOOM = 13;
 
-// Restringe o pan/zoom à área urbana de Fortaleza (com pequena margem).
-const FORTALEZA_MAX_BOUNDS = L.latLngBounds(
-  L.latLng(FORTALEZA_BOUNDS.minLat - 0.01, FORTALEZA_BOUNDS.minLng - 0.01),
-  L.latLng(FORTALEZA_BOUNDS.maxLat + 0.01, FORTALEZA_BOUNDS.maxLng + 0.01),
+// Permite navegar por qualquer região do território brasileiro.
+const BRAZIL_MAX_BOUNDS = L.latLngBounds(
+  L.latLng(BRAZIL_BOUNDS.minLat - 0.5, BRAZIL_BOUNDS.minLng - 0.5),
+  L.latLng(BRAZIL_BOUNDS.maxLat + 0.5, BRAZIL_BOUNDS.maxLng + 0.5),
 );
 
 const ARCGIS_TILES =
@@ -40,7 +39,6 @@ export default function MapCore({
   const mapRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const pendingMarkerRef = useRef<L.Marker | null>(null);
-  const boundaryLayerRef = useRef<L.GeoJSON | null>(null);
 
   // Mantém os callbacks mais recentes sem recriar o mapa.
   const callbacksRef = useRef({ onSelectPoint, onMapClick, onClearPendingCoord });
@@ -55,10 +53,10 @@ export default function MapCore({
     const map = L.map(containerRef.current, {
       zoomControl: false,
       attributionControl: false,
-      minZoom: 12,
+      minZoom: 4,
       maxZoom: 18,
-      maxBounds: FORTALEZA_MAX_BOUNDS,
-      maxBoundsViscosity: 1.0,
+      maxBounds: BRAZIL_MAX_BOUNDS,
+      maxBoundsViscosity: 0.8,
     }).setView([FORTALEZA_CENTER.lat, FORTALEZA_CENTER.lng], DEFAULT_ZOOM);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -81,23 +79,6 @@ export default function MapCore({
     markersLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    // Demarcação territorial de Fortaleza (malha municipal do IBGE).
-    fetchFortalezaBoundary().then((geojson) => {
-      if (geojson && mapRef.current) {
-        const layer = L.geoJSON(geojson as Parameters<typeof L.geoJSON>[0], {
-          style: {
-            color: '#A36437',
-            weight: 2.5,
-            dashArray: '6 5',
-            fillColor: '#A36437',
-            fillOpacity: 0.06,
-          },
-        });
-        layer.addTo(mapRef.current);
-        boundaryLayerRef.current = layer;
-      }
-    });
-
     const invalidateTimer = setTimeout(() => map.invalidateSize(), 100);
     const resizeObserver = new ResizeObserver(() => map.invalidateSize());
     resizeObserver.observe(containerRef.current);
@@ -108,7 +89,6 @@ export default function MapCore({
       map.remove();
       mapRef.current = null;
       markersLayerRef.current = null;
-      boundaryLayerRef.current = null;
     };
   }, []);
 
@@ -119,20 +99,54 @@ export default function MapCore({
 
     layer.clearLayers();
 
+    // Pontos vizinhos quase coincidentes poderiam se sobrepor e "sumir".
+    // Espalhamos ligeiramente as duplicatas em espiral (efeito estável).
+    const coordCount = new Map<string, number>();
+
     for (const point of points) {
+      const baseKey = `${point.lat.toFixed(6)},${point.lng.toFixed(6)}`;
+      const index = coordCount.get(baseKey) ?? 0;
+      coordCount.set(baseKey, index + 1);
+
+      let lat = point.lat;
+      let lng = point.lng;
+      if (index > 0) {
+        // ~30 m por anel, até 6 pontos por anel.
+        const ring = Math.floor(index / 6) + 1;
+        const angle = ((index % 6) / 6) * Math.PI * 2;
+        const offset = 0.00027 * ring;
+        lat += offset * Math.sin(angle);
+        lng += offset * Math.cos(angle);
+      }
+
       const isSelected = selectedPointId === point.pointId;
       const size = isSelected ? 34 : 24;
 
       const icon = L.divIcon({
         className: 'ep-marker',
-        html: experienceMarkerHtml(point, size, isSelected, activeDimensions, {
-          dominantEixo: dominantEixo(point),
-        }),
+        html: experienceMarkerHtml(
+          point,
+          size,
+          isSelected,
+          point.experiences,
+          { dominantEixo: dominantEixo(point) },
+        ),
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
       });
 
-      const marker = L.marker([point.lat, point.lng], { icon });
+      const marker = L.marker([lat, lng], { icon });
+
+      // Resumo do local/relato ao passar o mouse (texto puro, sem HTML).
+      const tip = point.streetName
+        ? `${point.streetName}${point.experiences.length > 1 ? ` · ${point.experiences.length} experiências` : ''}`
+        : `${point.experiences.length} experiência(s) registrada(s)`;
+      marker.bindTooltip(tip, {
+        direction: 'top',
+        offset: [0, -14],
+        className: 'ep-tooltip',
+      });
+
       marker.on('click', (event) => {
         L.DomEvent.stopPropagation(event.originalEvent);
         callbacksRef.current.onSelectPoint(point.pointId);

@@ -1,6 +1,8 @@
 import { Building, ExternalLink } from 'lucide-react';
+import { RegistrationBadge } from '@/components/ui/RegistrationBadge';
 import { EIXO_COLORS } from '@/domain/constants';
 import type { Experience } from '@/domain/types';
+import { getCityLabel } from '@/lib/brazilLocations';
 import { formatAddressDetail, formatDate } from '@/lib/utils';
 
 interface ExperienceCardProps {
@@ -37,15 +39,23 @@ export function ExperienceCard({ experience, onSelect }: ExperienceCardProps) {
               {experience.profile.name}
             </h3>
             <span className="text-[10px] font-bold uppercase tracking-wider text-inkMuted">
-              {experience.profile.neighborhood}
+              {[experience.profile.neighborhood, getCityLabel(experience.profile.city)]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </div>
         </div>
-        <div
-          className="rounded px-2 py-1 text-[9px] font-black uppercase"
-          style={{ backgroundColor: `${color}20`, color }}
-        >
-          {experience.eixo}
+        <div className="flex flex-col items-end gap-1.5">
+          <div
+            className="rounded px-2 py-1 text-[9px] font-black uppercase"
+            style={{ backgroundColor: `${color}20`, color }}
+          >
+            {experience.eixo}
+          </div>
+          <RegistrationBadge
+            locationSource={experience.locationSource}
+            isOnSite={experience.isOnSite}
+          />
         </div>
       </div>
 

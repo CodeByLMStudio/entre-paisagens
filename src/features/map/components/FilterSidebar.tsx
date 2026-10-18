@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Filter, Info, X } from 'lucide-react';
+import { Filter, Info, MapPinOff, X } from 'lucide-react';
 import { EixoInfoModal } from '@/components/modals/EixoInfoModal';
 import {
   EIXOS,
@@ -34,6 +34,11 @@ export function FilterSidebar({
   const clearDimensions = useMapStore((s) => s.clearDimensions);
   const [infoEixo, setInfoEixo] = useState<Eixo | null>(null);
 
+  // Exibe apenas dimensões que possuem ao menos uma experiência registrada.
+  const availableDimensions = LANDSCAPE_DIMENSIONS_LIST.filter(
+    (dimension) => (dimensionCounts[dimension] ?? 0) > 0,
+  );
+
   return (
     <>
       {/* Backdrop do drawer (web e mobile) */}
@@ -59,8 +64,8 @@ export function FilterSidebar({
             </div>
             <p className="mt-1 text-xs font-semibold text-inkMuted">
               {filteredCount}{' '}
-              {filteredCount === 1 ? 'ponto encontrado' : 'pontos encontrados'} em
-              Fortaleza.
+              {filteredCount === 1 ? 'ponto encontrado' : 'pontos encontrados'} no
+              mapa.
             </p>
           </div>
           <button
@@ -142,43 +147,55 @@ export function FilterSidebar({
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            {LANDSCAPE_DIMENSIONS_LIST.map((dimension) => {
-              const Icon = DIMENSION_ICONS[dimension];
-              const isSelected = activeDimensions.includes(dimension);
-              const count = dimensionCounts[dimension] ?? 0;
-              return (
-                <button
-                  key={dimension}
-                  type="button"
-                  onClick={() => toggleDimension(dimension)}
-                  className={cn(
-                    'flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left text-xs font-semibold transition-all',
-                    isSelected
-                      ? 'border-clay bg-clay text-paper shadow-sm'
-                      : 'border-sand bg-white text-ink hover:bg-paper2',
-                  )}
-                >
-                  <Icon
-                    size={16}
-                    className={cn('shrink-0', isSelected ? 'text-paper' : 'text-clay')}
-                  />
-                  <span className="flex-1 leading-tight">{dimension}</span>
-                  <span
+          {availableDimensions.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              {availableDimensions.map((dimension) => {
+                const Icon = DIMENSION_ICONS[dimension];
+                const isSelected = activeDimensions.includes(dimension);
+                const count = dimensionCounts[dimension] ?? 0;
+                return (
+                  <button
+                    key={dimension}
+                    type="button"
+                    onClick={() => toggleDimension(dimension)}
                     className={cn(
-                      'shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none',
+                      'flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left text-xs font-semibold transition-all',
                       isSelected
-                        ? 'bg-paper/20 text-paper'
-                        : 'bg-paper2 text-inkMuted',
+                        ? 'border-clay bg-clay text-paper shadow-sm'
+                        : 'border-sand bg-white text-ink hover:bg-paper2',
                     )}
                   >
-                    {count}
-                  </span>
-                  {isSelected && <span className="text-sm leading-none">✓</span>}
-                </button>
-              );
-            })}
-          </div>
+                    <Icon
+                      size={16}
+                      className={cn('shrink-0', isSelected ? 'text-paper' : 'text-clay')}
+                    />
+                    <span className="flex-1 leading-tight">{dimension}</span>
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none',
+                        isSelected
+                          ? 'bg-paper/20 text-paper'
+                          : 'bg-paper2 text-inkMuted',
+                      )}
+                    >
+                      {count}
+                    </span>
+                    {isSelected && <span className="text-sm leading-none">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-sand bg-white/60 px-4 py-8 text-center">
+              <MapPinOff size={32} className="mb-3 text-sand" />
+              <p className="text-xs font-black text-ink">
+                Nenhuma dimensão registrada
+              </p>
+              <p className="mt-1 text-[10px] font-semibold leading-relaxed text-inkMuted">
+                As dimensões dos relatos inseridos pela comunidade aparecerão aqui.
+              </p>
+            </div>
+          )}
         </div>
       </aside>
 

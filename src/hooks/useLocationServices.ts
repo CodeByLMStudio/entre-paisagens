@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { getAccuratePosition } from '@/lib/geolocation';
-import { isWithinFortalezaBoundary } from '@/lib/boundary';
+import { isWithinBrazil } from '@/lib/geo';
 import { useCollectionStore } from '@/stores/collectionStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useGeocoding } from './useGeocoding';
@@ -29,9 +29,8 @@ export function useLocationServices() {
 
       const { latitude: lat, longitude: lng } = position.coords;
 
-      const inside = await isWithinFortalezaBoundary(lat, lng);
-      if (!inside) {
-        showToast('Sua localização atual está fora dos limites de Fortaleza.');
+      if (!isWithinBrazil(lat, lng)) {
+        showToast('Sua localização atual está fora do território brasileiro.');
         return null;
       }
 

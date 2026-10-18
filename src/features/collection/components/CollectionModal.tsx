@@ -14,9 +14,17 @@ export function CollectionModal() {
   const close = useCollectionStore((s) => s.close);
 
   return (
-    <Modal open={isOpen} onClose={close} title="NOVO RELATO DE PAISAGEM" className="max-w-xl">
-      <div className="flex-1 p-6 md:p-8">
-        <StepProgress step={step} />
+    <Modal
+      open={isOpen}
+      onClose={close}
+      title="NOVO RELATO DE PAISAGEM"
+      className="max-w-xl"
+      scrollable={false}
+    >
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="shrink-0 px-6 pb-2 pt-4 md:px-8 md:pt-5">
+          <StepProgress step={step} />
+        </div>
         {step === 1 && <Step1Profile />}
         {step === 2 && <Step2Location />}
         {step === 3 && <Step3Media />}

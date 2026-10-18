@@ -5,8 +5,9 @@ import { MapPin, X } from 'lucide-react';
 import { LANDSCAPE_DIMENSIONS_LIST } from '@/domain/constants';
 import type { LandscapeDimension } from '@/domain/types';
 import { useGeocoding } from '@/hooks/useGeocoding';
-import { isWithinFortalezaBoundary } from '@/lib/boundary';
+import { isWithinBrazil } from '@/lib/geo';
 import { useCollectionStore } from '@/stores/collectionStore';
+import { requireTermsAcceptance } from '@/stores/consentStore';
 import { useMapPoints, useExperienceStore } from '@/stores/experienceStore';
 import { useMapStore } from '@/stores/mapStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -43,8 +44,10 @@ export function DashboardView() {
           activeEixo === 'ALL' || exps.some((exp) => exp.eixo === activeEixo);
         const matchesDimension =
           activeDimensions.length === 0 ||
+          // Qualquer uma das dimensões selecionadas (antes, todas eram exigidas
+          // no mesmo relato e os pontos filtrados desapareciam do mapa).
           exps.some((exp) =>
-            activeDimensions.every((d) => exp.dimensions.includes(d)),
+            activeDimensions.some((d) => exp.dimensions.includes(d)),
           );
         return matchesEixo && matchesDimension;
       }),
@@ -72,12 +75,8 @@ export function DashboardView() {
   }, [experiences, activeEixo]);
 
   const handleMapClick = async (lat: number, lng: number) => {
-    const inside = await isWithinFortalezaBoundary(lat, lng);
-    if (!inside) {
-      showToast(
-        'Atenção: Este ponto está fora da área demarcada de Fortaleza. Os relatos só podem ser registrados dentro do contorno do município.',
-        'error',
-      );
+    if (!isWithinBrazil(lat, lng)) {
+      showToast('Selecione um ponto dentro do território brasileiro.', 'error');
       return;
     }
 
@@ -88,6 +87,8 @@ export function DashboardView() {
       lng,
       streetName: result.streetName,
       locationNeighborhood: result.neighborhood ?? '',
+      locationSource: 'map',
+      isOnSite: false,
     });
 
     if (pickingMode) {
@@ -104,20 +105,26 @@ export function DashboardView() {
   // "Registrar neste local": abre o fluxo a partir do ponto selecionado.
   const handleRegisterAtPoint = () => {
     if (!selectedPoint) return;
-    const { resetDraft, open } = useCollectionStore.getState();
-    resetDraft(
-      { lat: selectedPoint.lat, lng: selectedPoint.lng },
-      selectedPoint.streetName,
-      selectedPoint.locationNeighborhood,
-    );
-    // Pré-preenche número/referência e o pointId para incrementar o histórico.
-    const { updateForm } = useCollectionStore.getState();
-    updateForm({
-      streetNumber: selectedPoint.streetNumber ?? '',
-      streetReference: selectedPoint.streetReference ?? '',
-      pointId: selectedPoint.pointId,
+
+    requireTermsAcceptance(() => {
+      const { resetDraft, open } = useCollectionStore.getState();
+      resetDraft(
+        { lat: selectedPoint.lat, lng: selectedPoint.lng },
+        selectedPoint.streetName,
+        selectedPoint.locationNeighborhood,
+      );
+      // Pré-preenche número/referência e o pointId para incrementar o histórico.
+      const { updateForm } = useCollectionStore.getState();
+      updateForm({
+        streetReference: selectedPoint.streetReference ?? '',
+        // Novo ponto: registros no mesmo local são agrupados pela coordenada,
+        // enquanto o histórico é unificado pelo logradouro.
+        pointId: undefined,
+        locationSource: 'map',
+        isOnSite: false,
+      });
+      open();
     });
-    open();
   };
 
   return (
@@ -157,13 +164,12 @@ export function DashboardView() {
         />
       </div>
 
-      {selectedPoint && (
-        <ExperienceDetailPanel
-          point={selectedPoint}
-          onClose={() => setSelectedPointId(null)}
-          onRegisterAtPoint={handleRegisterAtPoint}
-        />
-      )}
+      <ExperienceDetailPanel
+        point={selectedPoint}
+        allPoints={allPoints}
+        onClose={() => setSelectedPointId(null)}
+        onRegisterAtPoint={handleRegisterAtPoint}
+      />
     </div>
   );
 }

@@ -28,15 +28,17 @@ export function sanitizeText(value: string | null | undefined, maxLength = 2000)
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'blob:']);
 
 /**
- * Valida URL de mídia. Permite apenas http/https/blob e data URLs de imagem.
- * Retorna `null` caso inválida (impede `javascript:` e afins).
+ * Valida URL de mídia. Permite apenas http/https/blob e data URLs de imagem
+ * ou áudio. Retorna `null` caso inválida (impede `javascript:` e afins).
  */
 export function sanitizeMediaUrl(value: string | null | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();
 
   if (trimmed.startsWith('data:')) {
-    return trimmed.startsWith('data:image/') ? trimmed : null;
+    return trimmed.startsWith('data:image/') || trimmed.startsWith('data:audio/')
+      ? trimmed
+      : null;
   }
 
   try {
@@ -82,6 +84,9 @@ export function sanitizeExperience(experience: Experience): Experience {
     streetNumberOrObs: experience.streetNumberOrObs
       ? sanitizeText(experience.streetNumberOrObs, 240)
       : undefined,
+    relationOther: experience.relationOther
+      ? sanitizeText(experience.relationOther, 500)
+      : '',
     proposal: sanitizeText(experience.proposal, 2000),
     photoUrl: sanitizeMediaUrl(experience.photoUrl),
     audioUrl: sanitizeMediaUrl(experience.audioUrl),
@@ -90,6 +95,8 @@ export function sanitizeExperience(experience: Experience): Experience {
       ...experience.profile,
       name: sanitizeText(experience.profile.name, 80),
       neighborhood: sanitizeText(experience.profile.neighborhood, 80),
+      state: sanitizeText(experience.profile.state, 40),
+      city: sanitizeText(experience.profile.city, 120),
       sensoryMobilityNotes: sanitizeText(experience.profile.sensoryMobilityNotes, 500),
     },
   };

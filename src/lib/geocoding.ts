@@ -66,7 +66,10 @@ export async function reverseGeocode(
         const neighborhood =
           (address.suburb as string | undefined) ??
           (address.neighbourhood as string | undefined) ??
-          (address.city_district as string | undefined);
+          (address.city_district as string | undefined) ??
+          (address.city as string | undefined) ??
+          (address.town as string | undefined) ??
+          (address.village as string | undefined);
 
         if (road) {
           return { streetName: String(road), neighborhood, ok: true };
@@ -86,10 +89,9 @@ export async function reverseGeocode(
 }
 
 /**
- * Busca de endereços (geocodificação direta) restrita ao município de
- * Fortaleza (CE). A busca é feita com `viewbox` e `bounded=1` para priorizar
- * resultados dentro dos limites da cidade. Retorna uma lista vazia em caso de
- * erro (fallback elegante).
+ * Busca de endereços (geocodificação direta) em todo o território brasileiro.
+ * Usa apenas `countrycodes=br`, sem restringir a uma cidade/região. Retorna
+ * uma lista vazia em caso de erro (fallback elegante).
  */
 export async function searchAddresses(
   query: string,
@@ -104,9 +106,6 @@ export async function searchAddresses(
     countrycodes: 'br',
     addressdetails: '1',
     limit: '8',
-    // viewbox = minLng, maxLat, maxLng, minLat (Fortaleza)
-    viewbox: '-38.64,-3.70,-38.42,-3.88',
-    bounded: '1',
   });
 
   try {
@@ -148,8 +147,14 @@ export async function searchAddresses(
       const suburb =
         (address.suburb as string | undefined) ??
         (address.neighbourhood as string | undefined);
+      const city =
+        (address.city as string | undefined) ??
+        (address.town as string | undefined) ??
+        (address.village as string | undefined) ??
+        (address.municipality as string | undefined);
+      const state = address.state as string | undefined;
 
-      const labelParts = [streetName, suburb].filter(Boolean);
+      const labelParts = [streetName, suburb, city, state].filter(Boolean);
       const label =
         labelParts.length > 0
           ? labelParts.join(', ')

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { fetchFortalezaBoundary } from '@/lib/boundary';
 import { storage } from '@/lib/storage';
 import { useExperienceStore } from '@/stores/experienceStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -17,9 +16,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Limpa dados antigos (v1) de campanhas anteriores de teste.
     storage.remove('entre-paisagens.experiences.v1');
-
-    // Pré-carrega a malha de Fortaleza (usada na validação de área).
-    void fetchFortalezaBoundary();
 
     useExperienceStore.getState().hydrate();
 
